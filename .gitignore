@@ -1,0 +1,8 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Credentials and sensitive data
+credentials.json
