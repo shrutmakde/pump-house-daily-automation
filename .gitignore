@@ -7,6 +7,5 @@ node_modules/
 # Credentials and sensitive data
 credentials.json
 
-
 # index.backup ignored as it is a backup file
 index.backup
