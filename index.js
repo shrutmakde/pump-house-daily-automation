@@ -48,6 +48,31 @@ async function fetchNewPumpKPIs(id) {
   return response.data.data || [];
 }
 
+async function fetchPumpActivity(pump, todayDate) {
+  // todayDate: "YYYY-MM-DD"
+  if (pump.isOld) {
+    // Old pumps: POST request
+    const url = `https://poc.pwms.wbphed.wtlprojects.com/api/pump-activity?stationId=${pump.stationId}&start_date=${todayDate}&end_date=${todayDate}`;
+    try {
+      const res = await axios.post(url);
+      return res.data.data || [];
+    } catch (err) {
+      console.error(`Failed to fetch pump activity for ${pump.name}:`, err.message);
+      return [];
+    }
+  } else {
+    // New pumps: GET request
+    const url = `https://pwms.wbphed.wtlprojects.com/api/gen/pump-activity?id=${pump.id}&start_date=${todayDate}&end_date=${todayDate}`;
+    try {
+      const res = await axios.get(url);
+      return res.data.data || [];
+    } catch (err) {
+      console.error(`Failed to fetch pump activity for ${pump.name}:`, err.message);
+      return [];
+    }
+  }
+}
+
 // --- DELAY HELPER ---
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -257,7 +282,7 @@ async function updateSheetCell(sheets, row, colIdx, remark, color) {
 }
 
 // --- LOGIC CHECKS (APPLY ALL 19 RULES) ---
-function applyRules(kpis) {
+function applyRules(kpis, pumpActivity) {
   // Helper to get value by label or key
   const get = (label, badge) => {
     if (!kpis) return undefined;
@@ -281,9 +306,20 @@ function applyRules(kpis) {
   };
 
   // 1. Pump Status OFF > 24h (ORANGE)
-  const pumpStatus = get("Pump Status");
-  if (pumpStatus === "Off") {
-    // Check if it's been off for >24h (not enough info in sample, so skip for now)
+  if (pumpActivity && pumpActivity.length > 0) {
+    // Find the latest transaction
+    const latest = pumpActivity[0]; // assuming sorted DESC by timestamp
+    if (latest.main_pump_status === false || latest.is_on === false) {
+      // Check how long it's been OFF
+      const offTime = moment(latest.main_pump_transition_timestamp || latest.transition_timestamp);
+      const hoursOff = moment().diff(offTime, "hours");
+      if (hoursOff >= 24) {
+        return {
+          remarks: "Pump Status OFF for more than 24 hours.",
+          color: "ORANGE",
+        };
+      }
+    }
   }
 
   // 2. Chlorine Pump Status OFF > 24h (ORANGE)
@@ -418,6 +454,7 @@ function applyRules(kpis) {
 async function main() {
   const sheets = await getAuthSheets();
   const todayIST = moment().tz("Asia/Kolkata").format("D/M/YYYY");
+  const todayDateISO = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
 
   // Old pumps (manually defined)
   const oldPumps = [
@@ -498,13 +535,18 @@ async function main() {
     let kpis = [];
     let remark = "API Error";
     let color = "RED";
+    let pumpActivity = [];
     try {
       if (pump.isOld) {
         kpis = await fetchOldPumpKPIs(pump.stationId);
       } else {
         kpis = await fetchNewPumpKPIs(pump.id);
       }
-      const result = applyRules(kpis);
+      // Fetch pump activity for today
+      pumpActivity = await fetchPumpActivity(pump, todayDateISO);
+
+      // Pass pumpActivity to applyRules
+      const result = applyRules(kpis, pumpActivity);
       remark = result.remarks;
       color = result.color;
     } catch (err) {
