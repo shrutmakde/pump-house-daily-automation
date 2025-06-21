@@ -48,11 +48,10 @@ async function fetchNewPumpKPIs(id) {
   return response.data.data || [];
 }
 
-async function fetchPumpActivity(pump, todayDate) {
-  // todayDate: "YYYY-MM-DD"
+async function fetchPumpActivity(pump, startDate, endDate) {
   if (pump.isOld) {
     // Old pumps: POST request
-    const url = `https://poc.pwms.wbphed.wtlprojects.com/api/pump-activity?stationId=${pump.stationId}&start_date=${todayDate}&end_date=${todayDate}`;
+    const url = `https://poc.pwms.wbphed.wtlprojects.com/api/pump-activity?stationId=${pump.stationId}&start_date=${startDate}&end_date=${endDate}`;
     try {
       const res = await axios.post(url);
       return res.data.data || [];
@@ -62,7 +61,7 @@ async function fetchPumpActivity(pump, todayDate) {
     }
   } else {
     // New pumps: GET request
-    const url = `https://pwms.wbphed.wtlprojects.com/api/gen/pump-activity?id=${pump.id}&start_date=${todayDate}&end_date=${todayDate}`;
+    const url = `https://pwms.wbphed.wtlprojects.com/api/gen/pump-activity?id=${pump.id}&start_date=${startDate}&end_date=${endDate}`;
     try {
       const res = await axios.get(url);
       return res.data.data || [];
@@ -77,7 +76,7 @@ async function fetchPumpActivity(pump, todayDate) {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
+ 
 // --- COLOR MAPPING ---
 function getColorCode(colorName) {
   switch (colorName) {
@@ -455,6 +454,7 @@ async function main() {
   const sheets = await getAuthSheets();
   const todayIST = moment().tz("Asia/Kolkata").format("D/M/YYYY");
   const todayDateISO = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
+  const yesterdayDateISO = moment().tz("Asia/Kolkata").subtract(1, "day").format("YYYY-MM-DD");
 
   // Old pumps (manually defined)
   const oldPumps = [
@@ -542,8 +542,8 @@ async function main() {
       } else {
         kpis = await fetchNewPumpKPIs(pump.id);
       }
-      // Fetch pump activity for today
-      pumpActivity = await fetchPumpActivity(pump, todayDateISO);
+      // Fetch pump activity for yesterday and today
+      pumpActivity = await fetchPumpActivity(pump, yesterdayDateISO, todayDateISO);
 
       // Pass pumpActivity to applyRules
       const result = applyRules(kpis, pumpActivity);
