@@ -574,7 +574,7 @@ async function main() {
     "The pump house automation script has completed successfully."
   );
 
-  console.log("✅ All done for today!");
+  console.log("All done for today!");
 }
 
 main().catch(console.error);
