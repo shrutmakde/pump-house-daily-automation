@@ -193,6 +193,7 @@ async function getOrAddDateColumn(sheets, todayDate) {
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [[todayDate]] },
     });
+
   }
   return { colIdx, colLetter: columnToLetter(colIdx + 1) };
 }
