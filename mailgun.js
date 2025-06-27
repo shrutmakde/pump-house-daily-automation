@@ -15,7 +15,7 @@ async function sendNotificationEmail() {
 
 Your daily pump house automation report is ready.
 
-View the Google Sheet here: https://https://docs.google.com/spreadsheets/d/12ow48aUbxpaPeo6G9yni-i4lYhQxQ3Jhs5j6sm24YIY/edit?gid=1557589138#gid=1557589138
+View the Google Sheet here: https://docs.google.com/spreadsheets/d/12ow48aUbxpaPeo6G9yni-i4lYhQxQ3Jhs5j6sm24YIY/edit?gid=1557589138#gid=1557589138
 
 Regards,
 Pump House Bot
